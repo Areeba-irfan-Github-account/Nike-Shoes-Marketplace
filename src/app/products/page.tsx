@@ -1,0 +1,260 @@
+"use client"
+import { useState, useEffect, useRef } from "react"
+import Image from "next/image"
+import Link from "next/link"
+import { IoFilter } from "react-icons/io5"
+import { IoIosArrowDown } from "react-icons/io"
+import Slider from "./Slider"
+import Pagination from "../../components/Pagination"
+import { useSearchParams } from "next/navigation"
+import { groq } from "next-sanity"
+import { client } from "@/sanity/lib/client"
+
+interface Product {
+  productName: string
+  status: string
+  slug: {
+    current: string
+  }
+  price: number
+  description: string
+  category: string
+  image: {
+    url: string
+  }
+}
+
+type SortOption = "featured" | "newest" | "price-asc" | "price-desc"
+
+const ProductPage = () => {
+  const [products, setProducts] = useState<Product[]>([])
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
+  const [isFilterVisible, setIsFilterVisible] = useState(true)
+  const [sortBy, setSortBy] = useState<SortOption>("featured")
+  const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const searchParams = useSearchParams()
+  const sortDropdownRef = useRef<HTMLDivElement>(null)
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [productsPerPage] = useState(9)
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const query = groq`*[_type == "product"] {
+          productName,
+          status,
+          slug,
+          price,
+          description,
+          category,
+          "image": image.asset->{
+            url,
+          }
+        }`
+        const data: Product[] = await client.fetch(query)
+        setProducts(data)
+        setFilteredProducts(data)
+      } catch (error) {
+        console.error("Error fetching products:", error)
+      }
+    }
+
+    fetchProducts()
+  }, [])
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target as Node)) {
+        setIsSortDropdownOpen(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [])
+
+  const handleFilter = (categoryFilter: string[], colorFilter: string[], priceRange: [number, number]) => {
+    const filtered = products.filter((product) => {
+      const categoryMatch = categoryFilter.length === 0 || categoryFilter.includes(product.category)
+      const priceMatch = product.price >= priceRange[0] && product.price <= priceRange[1]
+      const searchMatch =
+        product.productName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.category.toLowerCase().includes(searchQuery.toLowerCase())
+      return categoryMatch && priceMatch && searchMatch
+    })
+
+    setFilteredProducts(filtered)
+    setCurrentPage(1) // Reset to first page when filtering
+  }
+
+  const toggleFilterVisibility = () => {
+    setIsFilterVisible(!isFilterVisible)
+  }
+
+  const toggleSortDropdown = () => {
+    setIsSortDropdownOpen(!isSortDropdownOpen)
+  }
+
+  const handleSortChange = (option: SortOption) => {
+    setSortBy(option)
+    setIsSortDropdownOpen(false)
+  }
+
+  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(event.target.value)
+    setCurrentPage(1) // Reset to first page when searching
+  }
+
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    switch (sortBy) {
+      case "newest":
+        return new Date(b.slug.current).getTime() - new Date(a.slug.current).getTime()
+      case "price-asc":
+        return a.price - b.price
+      case "price-desc":
+        return b.price - a.price
+      default:
+        return 0
+    }
+  })
+
+  const getSortByLabel = (option: SortOption): string => {
+    switch (option) {
+      case "featured":
+        return "Featured"
+      case "newest":
+        return "Newest"
+      case "price-asc":
+        return "Price: Low to High"
+      case "price-desc":
+        return "Price: High to Low"
+      default:
+        return "Sort By"
+    }
+  }
+
+  // Pagination logic
+  const indexOfLastProduct = currentPage * productsPerPage
+  const indexOfFirstProduct = indexOfLastProduct - productsPerPage
+  const currentProducts = sortedProducts.slice(indexOfFirstProduct, indexOfLastProduct)
+  const totalPages = Math.ceil(sortedProducts.length / productsPerPage)
+
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber)
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex flex-col md:flex-row justify-between items-center mb-8">
+        <input
+          type="text"
+          placeholder="Search for products..."
+          value={searchQuery}
+          onChange={handleSearch}
+          className="w-full sm:w-64 px-4 py-2 border border-gray-300 rounded-md mb-4 sm:mb-0 sm:mr-4"
+        />
+        <h1 className="text-2xl font-bold mb-4 md:mb-0">New({sortedProducts.length})</h1>
+        <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 items-center">
+          <button
+            className="flex items-center space-x-2 bg-gray-100 px-4 py-2 rounded-md"
+            onClick={toggleFilterVisibility}
+          >
+            <span>{isFilterVisible ? "Hide" : "Show"} Filters</span>
+            <IoFilter size={20} />
+          </button>
+          <div className="relative" ref={sortDropdownRef}>
+            <button
+              className="flex items-center space-x-2 bg-gray-100 px-4 py-2 rounded-md"
+              onClick={toggleSortDropdown}
+            >
+              <span>Sort By: {getSortByLabel(sortBy)}</span>
+              <IoIosArrowDown
+                size={24}
+                className={`transform transition-transform ${isSortDropdownOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+            {isSortDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
+                <div className="py-1">
+                  <button
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={() => handleSortChange("featured")}
+                  >
+                    Featured
+                  </button>
+                  <button
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={() => handleSortChange("newest")}
+                  >
+                    Newest
+                  </button>
+                  <button
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={() => handleSortChange("price-asc")}
+                  >
+                    Price: Low to High
+                  </button>
+                  <button
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={() => handleSortChange("price-desc")}
+                  >
+                    Price: High to Low
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col lg:flex-row">
+        {/* Sidebar */}
+        {isFilterVisible && (
+          <div className="w-full lg:w-1/4 mb-8 lg:mb-0">
+            <Slider onFilter={handleFilter} />
+          </div>
+        )}
+
+        {/* Products Section */}
+        <div className={`w-full ${isFilterVisible ? "lg:w-3/4 lg:pl-8" : "lg:w-full"}`}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {currentProducts.map((product) => (
+              <div key={product.slug.current} className="flex flex-col bg-white shadow-md rounded-lg overflow-hidden">
+                <div className="relative h-64">
+                  <Image
+                    src={product.image.url || "/placeholder.svg"}
+                    alt={product.productName}
+                    layout="fill"
+                    objectFit="cover"
+                  />
+                </div>
+                <div className="p-4 flex flex-col justify-between flex-grow">
+                  <div>
+                    <p className="text-red-600 font-semibold mb-1">{product.status}</p>
+                    <Link
+                      href={`/products/${product.slug.current}`}
+                      className="text-lg font-bold text-black hover:underline mb-2 block"
+                    >
+                      {product.productName}
+                    </Link>
+                    <p className="text-gray-600 mb-2">{product.category}</p>
+                  </div>
+                  <p className="text-lg font-medium">MRP: ₹{product.price.toLocaleString()}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default ProductPage
+
