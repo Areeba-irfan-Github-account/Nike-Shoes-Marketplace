@@ -227,7 +227,7 @@ const ProductPage = () => {
               <div key={product.slug.current} className="flex flex-col bg-white shadow-md rounded-lg overflow-hidden">
                 <div className="relative h-64">
                   <Image
-                    src={product.image.url || "/placeholder.svg"}
+                    src={product.image?.url || "/placeholder.svg"}
                     alt={product.productName}
                     layout="fill"
                     objectFit="cover"
