@@ -106,27 +106,32 @@ const Category = () => {
                     className={`flex flex-row justify-start items-center overflow-x-auto scroll-smooth snap-x snap-mandatory space-x-4 mb-11 no-scrollbar ${!isProductListVisible ? 'hidden' : ''
                         }`}
                 >
-                    {products.map((product) => (
-                        <div
-                            key={product.id}
-                            className="flex-none w-60 h-auto p-4 bg-white rounded-lg shadow-lg snap-start relative"
-                        >
-                            <Image
-                                src={product.image?.url || "/placeholder.svg"}
-                                alt={product.prouctName}
-                                width={790}
-                                height={600}
-                                className="object-cover rounded-md"
-                            />
-                            <div className="flex flex-col justify-start mt-4 p-3 text-center">
-                                <div className="flex flex-col text-base">
-                                    <Link href={`/products/${product.slug}`} className='font-semibold'>{product.prouctName}</Link>
-                                    <h1 className=''>${product.price.toLocaleString()}</h1>
-                                </div>
-                                <p className="text-gray-900">{product.category}</p>
-                            </div>
-                        </div>
-                    ))}
+                   {products.length === 0 ? (
+    <div className="flex justify-center items-center h-64 text-xl text-gray-500">Loading...</div>
+) : (
+    products.map((product) => (
+        <div
+            key={product.id}
+            className="flex-none w-60 h-auto p-4 bg-white rounded-lg shadow-lg snap-start relative"
+        >
+            <Image
+                src={product.image?.url || "/placeholder.svg"}
+                alt={product.prouctName}
+                width={790}
+                height={600}
+                className="object-cover rounded-md"
+            />
+            <div className="flex flex-col justify-start mt-4 p-3 text-center">
+                <div className="flex flex-col text-base">
+                    <Link href={`/products/${product.slug}`} className='font-semibold'>{product.prouctName}</Link>
+                    <h1 className=''>${product.price.toLocaleString()}</h1>
+                </div>
+                <p className="text-gray-900">{product.category}</p>
+            </div>
+        </div>
+    ))
+)}
+                    
                 </div>
             </div>
             <Feature />
