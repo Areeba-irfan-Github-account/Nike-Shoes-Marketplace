@@ -15,6 +15,7 @@ interface Product {
   }
 }
 
+
 interface ProductListProps {
   products: Product[]
   isProductListVisible: boolean
