@@ -183,14 +183,17 @@ const ProductPage = () => {
       <div className="flex flex-col lg:flex-row">
         {isFilterVisible && (
           <div className="w-full lg:w-1/4 mb-8 lg:mb-0">
-            <Slider onFilter={handleFilter} />
+            <Suspense fallback={<div>Loading...</div>}>
+       <Slider onFilter={handleFilter} />
+    </Suspense>
+         
           </div>
         )}
 
         <div className={`w-full ${isFilterVisible ? "lg:w-3/4 lg:pl-8" : "lg:w-full"}`}>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {currentProducts.map((product) => (
-              <div key={product.slug.current} className="flex flex-col bg-white shadow-md rounded-lg overflow-hidden">
+              <div key={product.slug} className="flex flex-col bg-white shadow-md rounded-lg overflow-hidden">
                 <div className="relative h-64">
                   <Image
                     src={product.image.url || "/placeholder.svg"}
