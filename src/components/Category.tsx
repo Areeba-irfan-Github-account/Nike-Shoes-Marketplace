@@ -2,18 +2,16 @@
 import Image from 'next/image';
 import React, { useState } from 'react';
 import { MdArrowBackIosNew, MdOutlineArrowForwardIos } from "react-icons/md";
-import { FaRegHeart, FaHeart } from "react-icons/fa";
 import Feature from './Feature';
-import Variety from './Variety';
 import Miss from './Miss';
 import Essential from './Essential';
 import { client } from '@/sanity/lib/client';
 import Link from 'next/link';
-import { useWishlist } from '../context/WishlistContext';
+import { useWishlist } from './../app/context/WishlistContext';
 
 interface Product {
     id: string;
-    productName: string;
+    prouctName: string;
     price: number;
     slug: string;
     status: string;
@@ -22,13 +20,6 @@ interface Product {
     image: {
         _id: string;
         url: string;
-        mimeType: string;
-        extension: string;
-        size: number;
-        metadata: object;
-        originalFilename: string;
-        _createdAt: string;
-        _updatedAt: string;
     };
 }
 
@@ -79,7 +70,7 @@ const Category = () => {
         } else {
             addToWishlist({
                 id: product.id,
-                productName: product.productName,
+                productName: product.prouctName,
                 price: product.price,
                 image: product.image.url,
                 slug: product.slug,
@@ -122,14 +113,14 @@ const Category = () => {
                         >
                             <Image
                                 src={product.image?.url || "/placeholder.svg"}
-                                alt={product.productName}
+                                alt={product.prouctName}
                                 width={790}
                                 height={600}
                                 className="object-cover rounded-md"
                             />
                             <div className="flex flex-col justify-start mt-4 p-3 text-center">
                                 <div className="flex flex-col text-base">
-                                    <Link href={`/products/${product.slug}`} className='font-semibold'>{product.productName}</Link>
+                                    <Link href={`/products/${product.slug}`} className='font-semibold'>{product.prouctName}</Link>
                                     <h1 className=''>${product.price.toLocaleString()}</h1>
                                 </div>
                                 <p className="text-gray-900">{product.category}</p>
@@ -139,7 +130,7 @@ const Category = () => {
                 </div>
             </div>
             <Feature />
-            <Variety />
+           
             <Miss />
             <Essential />
         </div>
