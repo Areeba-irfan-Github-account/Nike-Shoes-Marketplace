@@ -5,8 +5,6 @@ import Link from "next/link"
 import { IoFilter } from "react-icons/io5"
 import { IoIosArrowDown } from "react-icons/io"
 import Slider from "./Slider"
-import Pagination from "../../components/Pagination"
-import { useSearchParams } from "next/navigation"
 import { groq } from "next-sanity"
 import { client } from "@/sanity/lib/client"
 
@@ -33,12 +31,10 @@ const ProductPage = () => {
   const [sortBy, setSortBy] = useState<SortOption>("featured")
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const searchParams = useSearchParams()
   const sortDropdownRef = useRef<HTMLDivElement>(null)
 
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
-  const [productsPerPage] = useState(9)
+  const productsPerPage = 9
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -51,7 +47,7 @@ const ProductPage = () => {
           description,
           category,
           "image": image.asset->{
-            url,
+            url
           }
         }`
         const data: Product[] = await client.fetch(query)
@@ -89,16 +85,11 @@ const ProductPage = () => {
     })
 
     setFilteredProducts(filtered)
-    setCurrentPage(1) // Reset to first page when filtering
+    setCurrentPage(1)
   }
 
-  const toggleFilterVisibility = () => {
-    setIsFilterVisible(!isFilterVisible)
-  }
-
-  const toggleSortDropdown = () => {
-    setIsSortDropdownOpen(!isSortDropdownOpen)
-  }
+  const toggleFilterVisibility = () => setIsFilterVisible(!isFilterVisible)
+  const toggleSortDropdown = () => setIsSortDropdownOpen(!isSortDropdownOpen)
 
   const handleSortChange = (option: SortOption) => {
     setSortBy(option)
@@ -107,7 +98,7 @@ const ProductPage = () => {
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(event.target.value)
-    setCurrentPage(1) // Reset to first page when searching
+    setCurrentPage(1)
   }
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
@@ -124,29 +115,21 @@ const ProductPage = () => {
   })
 
   const getSortByLabel = (option: SortOption): string => {
-    switch (option) {
-      case "featured":
-        return "Featured"
-      case "newest":
-        return "Newest"
-      case "price-asc":
-        return "Price: Low to High"
-      case "price-desc":
-        return "Price: High to Low"
-      default:
-        return "Sort By"
+    const labels = {
+      featured: "Featured",
+      newest: "Newest",
+      "price-asc": "Price: Low to High",
+      "price-desc": "Price: High to Low",
     }
+    return labels[option] || "Sort By"
   }
 
-  // Pagination logic
   const indexOfLastProduct = currentPage * productsPerPage
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage
   const currentProducts = sortedProducts.slice(indexOfFirstProduct, indexOfLastProduct)
   const totalPages = Math.ceil(sortedProducts.length / productsPerPage)
 
-  const handlePageChange = (pageNumber: number) => {
-    setCurrentPage(pageNumber)
-  }
+  const handlePageChange = (pageNumber: number) => setCurrentPage(pageNumber)
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -181,30 +164,15 @@ const ProductPage = () => {
             {isSortDropdownOpen && (
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
                 <div className="py-1">
-                  <button
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    onClick={() => handleSortChange("featured")}
-                  >
-                    Featured
-                  </button>
-                  <button
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    onClick={() => handleSortChange("newest")}
-                  >
-                    Newest
-                  </button>
-                  <button
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    onClick={() => handleSortChange("price-asc")}
-                  >
-                    Price: Low to High
-                  </button>
-                  <button
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    onClick={() => handleSortChange("price-desc")}
-                  >
-                    Price: High to Low
-                  </button>
+                  {(["featured", "newest", "price-asc", "price-desc"] as SortOption[]).map((option) => (
+                    <button
+                      key={option}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => handleSortChange(option)}
+                    >
+                      {getSortByLabel(option)}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
@@ -213,21 +181,19 @@ const ProductPage = () => {
       </div>
 
       <div className="flex flex-col lg:flex-row">
-        {/* Sidebar */}
         {isFilterVisible && (
           <div className="w-full lg:w-1/4 mb-8 lg:mb-0">
             <Slider onFilter={handleFilter} />
           </div>
         )}
 
-        {/* Products Section */}
         <div className={`w-full ${isFilterVisible ? "lg:w-3/4 lg:pl-8" : "lg:w-full"}`}>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {currentProducts.map((product) => (
               <div key={product.slug.current} className="flex flex-col bg-white shadow-md rounded-lg overflow-hidden">
                 <div className="relative h-64">
                   <Image
-                    src={product.image?.url || "/placeholder.svg"}
+                    src={product.image.url || "/placeholder.svg"}
                     alt={product.productName}
                     layout="fill"
                     objectFit="cover"
@@ -249,7 +215,19 @@ const ProductPage = () => {
               </div>
             ))}
           </div>
-          <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+
+          {/* Pagination */}
+          <div className="mt-8 flex justify-center">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => handlePageChange(page)}
+                className={`mx-1 px-3 py-1 rounded ${currentPage === page ? "bg-blue-500 text-white" : "bg-gray-200"}`}
+              >
+                {page}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>
