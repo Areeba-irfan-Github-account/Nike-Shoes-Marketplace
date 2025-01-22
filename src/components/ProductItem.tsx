@@ -15,6 +15,7 @@ interface ProductItemProps {
   }
 }
 
+
 const ProductItem: React.FC<ProductItemProps> = ({ product }) => {
   return (
     <div className="flex-none w-60 h-auto p-4 bg-white rounded-lg shadow-lg snap-start relative">
